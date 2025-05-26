@@ -1,6 +1,7 @@
 package com.example.demo.http.controllers;
 
 import com.example.demo.dto.AnimalDTO;
+import com.example.demo.dto.AnimalTemplateDTO;
 import com.example.demo.services.animal.AnimalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,23 +17,28 @@ public class AnimalController {
 
     private final AnimalService animalService;
 
-    // serve como compra
-    @PostMapping("/create")
-    public ResponseEntity<AnimalDTO> create(@RequestBody AnimalDTO animalDTO) {
-        AnimalDTO createdAnimal = animalService.create(animalDTO);
-        return ResponseEntity.ok(createdAnimal);
+    @PostMapping("/buy")
+    public ResponseEntity<AnimalDTO> buyAnimal(@RequestParam Long templateId, @RequestParam Long cageId) {
+        AnimalDTO boughtAnimal = animalService.buyAnimal(templateId, cageId);
+        return ResponseEntity.ok(boughtAnimal);
+    }
+
+    @GetMapping("/templates")
+    public ResponseEntity<List<AnimalTemplateDTO>> getAvailableAnimals() {
+        List<AnimalTemplateDTO> templates = animalService.getAvailableAnimals();
+        return ResponseEntity.ok(templates);
+    }
+
+    @GetMapping("/templates/cage/{cageId}")
+    public ResponseEntity<List<AnimalTemplateDTO>> getCompatibleAnimals(@PathVariable Long cageId) {
+        List<AnimalTemplateDTO> compatibleAnimals = animalService.getCompatibleAnimals(cageId);
+        return ResponseEntity.ok(compatibleAnimals);
     }
 
     @GetMapping("/cage/{cageId}")
     public ResponseEntity<List<AnimalDTO>> findByCageId(@PathVariable Long cageId) {
         List<AnimalDTO> animals = animalService.findByCageId(cageId);
         return ResponseEntity.ok(animals);
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<AnimalDTO> findById(@PathVariable Long id) {
-        AnimalDTO animal = animalService.findById(id);
-        return ResponseEntity.ok(animal);
     }
 
     @GetMapping("/character/{characterId}")

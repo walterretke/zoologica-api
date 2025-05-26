@@ -1,6 +1,5 @@
 package com.example.demo.models;
 
-import com.example.demo.common.enums.CageType;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -8,26 +7,42 @@ import java.util.List;
 
 @Data
 @Entity
-public class  Cage {
+public class Cage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "character_id")
+    @JoinColumn(name = "character_id", nullable = false)
     private Character character;
 
-    @Enumerated(EnumType.STRING)
-    private CageType type;
+    @ManyToOne
+    @JoinColumn(name = "cage_type_id", nullable = false)
+    private CageType cageType;
 
-    private Integer coinPrice;
+    @Column(nullable = false)
+    private Integer purchasePrice; // Preço que foi pago
 
-    private Integer difficultyLevel;
+    @Column(nullable = false)
+    private java.time.LocalDateTime purchaseDate;
 
     @OneToMany(mappedBy = "cage", cascade = CascadeType.ALL)
     private List<Animal> animals;
 
-    @OneToMany(mappedBy = "cage")
+    @OneToMany(mappedBy = "cage", cascade = CascadeType.ALL)
     private List<MathProblem> mathProblems;
+
+    public Double getAnimalMultiplier() {
+        if (animals == null || animals.isEmpty()) {
+            return 1.0;
+        }
+        return 1.0 + ((animals.size() - 1) * 0.25);
+    }
+
+    public boolean canAddMoreAnimals() {
+        return animals == null || animals.size() < 10;
+    }
+
+    public Cage() {}
 }

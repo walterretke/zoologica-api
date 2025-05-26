@@ -1,29 +1,22 @@
 package com.example.demo.dto;
 
-import com.example.demo.common.enums.CageType;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class CageDTO {
-
     private Long id;
-
     private Long characterId;
-
-    private CageType type;
-
-    private Integer coinPrice;
-
+    private Long cageTypeId;
+    private String cageTypeName;
+    private String cageTypeDisplayName;
     private Integer difficultyLevel;
-
+    private Integer purchasePrice;
+    private LocalDateTime purchaseDate;
     private List<Long> animalIds;
-
-    private List<Long> mathProblemIds;
-
+    private Integer animalCount;
+    private Double animalMultiplier;
+    private String mathTopics;
 }

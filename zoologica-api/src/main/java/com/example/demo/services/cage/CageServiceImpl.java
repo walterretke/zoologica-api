@@ -2,12 +2,15 @@ package com.example.demo.services.cage;
 
 import com.example.demo.dto.CageDTO;
 import com.example.demo.models.Cage;
+import com.example.demo.models.CageType;
 import com.example.demo.models.Character;
 import com.example.demo.repositories.CageRepository;
+import com.example.demo.repositories.CageTypeRepository;
 import com.example.demo.repositories.CharacterRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,25 +21,33 @@ public class CageServiceImpl implements CageService {
 
     private final CageRepository cageRepository;
     private final CharacterRepository characterRepository;
+    private final CageTypeRepository cageTypeRepository;
 
     @Override
     public CageDTO create(CageDTO cageDTO) {
         Character character = characterRepository.findById(cageDTO.getCharacterId())
                 .orElseThrow(() -> new RuntimeException("Character not found with id: " + cageDTO.getCharacterId()));
 
-        if (character.getTotalCoins() < cageDTO.getCoinPrice()) {
-            throw new RuntimeException("Insufficient coins. Required: " + cageDTO.getCoinPrice() +
+        // Buscar o tipo de jaula
+        CageType cageType = cageTypeRepository.findById(cageDTO.getCageTypeId())
+                .orElseThrow(() -> new RuntimeException("Cage type not found with id: " + cageDTO.getCageTypeId()));
+
+        // Verificar se o personagem tem moedas suficientes (usar preço do CageType)
+        if (character.getTotalCoins() < cageType.getBasePrice()) {
+            throw new RuntimeException("Insufficient coins. Required: " + cageType.getBasePrice() +
                     ", Available: " + character.getTotalCoins());
         }
 
-        character.setTotalCoins(character.getTotalCoins() - cageDTO.getCoinPrice());
+        // Deduzir as moedas do personagem
+        character.setTotalCoins(character.getTotalCoins() - cageType.getBasePrice());
         characterRepository.save(character);
 
+        // Criar a jaula
         Cage newCage = new Cage();
         newCage.setCharacter(character);
-        newCage.setType(cageDTO.getType());
-        newCage.setCoinPrice(cageDTO.getCoinPrice());
-        newCage.setDifficultyLevel(cageDTO.getDifficultyLevel());
+        newCage.setCageType(cageType);
+        newCage.setPurchasePrice(cageType.getBasePrice());
+        newCage.setPurchaseDate(LocalDateTime.now());
         newCage.setAnimals(new ArrayList<>());
         newCage.setMathProblems(new ArrayList<>());
 
@@ -66,22 +77,26 @@ public class CageServiceImpl implements CageService {
     }
 
     private CageDTO convertToDTO(Cage cage) {
-        List<Long> animalIds = cage.getAnimals() != null ?
-                cage.getAnimals().stream().map(animal -> animal.getId()).collect(Collectors.toList()) :
-                new ArrayList<>();
-
-        List<Long> mathProblemIds = cage.getMathProblems() != null ?
-                cage.getMathProblems().stream().map(problem -> problem.getId()).collect(Collectors.toList()) :
-                new ArrayList<>();
-
         CageDTO dto = new CageDTO();
         dto.setId(cage.getId());
         dto.setCharacterId(cage.getCharacter().getId());
-        dto.setType(cage.getType());
-        dto.setCoinPrice(cage.getCoinPrice());
-        dto.setDifficultyLevel(cage.getDifficultyLevel());
+        dto.setCageTypeId(cage.getCageType().getId());
+        dto.setCageTypeName(cage.getCageType().getName());
+        dto.setCageTypeDisplayName(cage.getCageType().getDisplayName());
+        dto.setDifficultyLevel(cage.getCageType().getDifficultyLevel());
+        dto.setPurchasePrice(cage.getPurchasePrice());
+        dto.setPurchaseDate(cage.getPurchaseDate());
+        dto.setMathTopics(cage.getCageType().getMathTopics());
+
+        // Lista de IDs dos animais
+        List<Long> animalIds = cage.getAnimals() != null ?
+                cage.getAnimals().stream().map(animal -> animal.getId()).collect(Collectors.toList()) :
+                new ArrayList<>();
         dto.setAnimalIds(animalIds);
-        dto.setMathProblemIds(mathProblemIds);
+
+        // Estatísticas dos animais
+        dto.setAnimalCount(animalIds.size());
+        dto.setAnimalMultiplier(cage.getAnimalMultiplier());
 
         return dto;
     }

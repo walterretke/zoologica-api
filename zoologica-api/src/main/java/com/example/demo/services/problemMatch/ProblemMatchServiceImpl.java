@@ -2,6 +2,7 @@ package com.example.demo.services.problemMatch;
 
 import com.example.demo.dto.ProblemMatchDTO;
 import com.example.demo.dto.SolveProblemRequest;
+import com.example.demo.models.Cage;
 import com.example.demo.models.Character;
 import com.example.demo.models.MathProblem;
 import com.example.demo.models.ProblemMatch;
@@ -42,7 +43,7 @@ public class ProblemMatchServiceImpl implements ProblemMatchService {
         match.setDateTime(LocalDateTime.now());
 
         if (isCorrect) {
-            int coinsEarned = calculateCoins(request.getSolutionTime(), problem.getCage().getDifficultyLevel());
+            int coinsEarned = calculateCoins(request.getSolutionTime(), problem.getCage());
             match.setCoinsEarned(coinsEarned);
 
             character.setTotalCoins(character.getTotalCoins() + coinsEarned);
@@ -68,20 +69,23 @@ public class ProblemMatchServiceImpl implements ProblemMatchService {
                 .collect(Collectors.toList());
     }
 
-    private int calculateCoins(Long solutionTime, Integer difficultyLevel) {
-        // Fórmula de cálculo de moedas baseada no tempo e dificuldade
-        int baseCoins = difficultyLevel * 10; // Nível 1 = 10, Nível 2 = 20, Nível 3 = 30
+    private int calculateCoins(Long solutionTime, Cage cage) {
+        int baseCoins = cage.getCageType().getDifficultyLevel() * 15;
 
-        // Bonus por velocidade (menos tempo = mais moedas)
-        if (solutionTime <= 5000) { // 5 segundos
-            return baseCoins + 15; // Bonus de 15 moedas
-        } else if (solutionTime <= 10000) { // 10 segundos
-            return baseCoins + 10; // Bonus de 10 moedas
-        } else if (solutionTime <= 20000) { // 20 segundos
-            return baseCoins + 5; // Bonus de 5 moedas
-        } else {
-            return baseCoins; // Apenas as moedas base
+        int speedBonus = 0;
+        if (solutionTime <= 5000) {
+            speedBonus = 20;
+        } else if (solutionTime <= 10000) {
+            speedBonus = 15;
+        } else if (solutionTime <= 20000) {
+            speedBonus = 10;
         }
+
+        // Multiplicador por número de animais na jaula
+        Double animalMultiplier = cage.getAnimalMultiplier();
+
+        // Cálculo final: (base + bonus) * multiplicador de animais
+        return (int) ((baseCoins + speedBonus) * animalMultiplier);
     }
 
     private ProblemMatchDTO convertToDTO(ProblemMatch match) {
@@ -96,9 +100,15 @@ public class ProblemMatchServiceImpl implements ProblemMatchService {
         dto.setDateTime(match.getDateTime());
 
         if (match.getCorrect()) {
-            dto.setMessage("Parabéns! Resposta correta! Você ganhou " + match.getCoinsEarned() + " moedas!");
+            Cage cage = match.getMathProblem().getCage();
+            String animalInfo = cage.getAnimals().size() > 1 ?
+                    " (Multiplicador de " + cage.getAnimalMultiplier() + "x por ter " + cage.getAnimals().size() + " animais!)" : "";
+
+            dto.setMessage("🎉 Parabéns! Resposta correta! Você ganhou " + match.getCoinsEarned() +
+                    " moedas!" + animalInfo);
         } else {
-            dto.setMessage("Resposta incorreta! A resposta correta era: " + match.getMathProblem().getCorrectAnswer() +
+            dto.setMessage("❌ Resposta incorreta! A resposta correta era: " +
+                    match.getMathProblem().getCorrectAnswer() +
                     ". Você respondeu: " + match.getGivenAnswer());
         }
 
